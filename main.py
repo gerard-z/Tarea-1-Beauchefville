@@ -29,6 +29,7 @@ class Controller:
         self.is_s_pressed = False
         self.is_a_pressed = False
         self.is_d_pressed = False
+        self.what_to_draw = 0
 
 
 # we will use the global controller as communication with the callback function
@@ -66,6 +67,22 @@ def on_key(window, key, scancode, action, mods):
             controller.is_d_pressed = True
         elif action == glfw.RELEASE:
             controller.is_d_pressed = False
+
+    # Caso de detectar la tecla [0], actualiza que se dibuja
+    if key == glfw.KEY_0 and action == glfw.PRESS:
+        controller.what_to_draw = 0
+    
+    # Caso de detectar la tecla [1], actualiza que se dibuja
+    if key == glfw.KEY_1 and action == glfw.PRESS:
+        controller.what_to_draw = 1
+
+    # Caso de detectar la tecla [2], actualiza que se dibuja
+    if key == glfw.KEY_2 and action == glfw.PRESS:
+        controller.what_to_draw = 2
+
+    # Caso de detectar la tecla [3], actualiza que se dibuja
+    if key == glfw.KEY_3 and action == glfw.PRESS:
+        controller.what_to_draw = 3
 
     # Caso de detecar la barra espaciadora, se cambia el metodo de dibujo
     if key == glfw.KEY_SPACE and action ==glfw.PRESS:
@@ -114,13 +131,25 @@ if __name__ == "__main__":
     
     ######### SHAPES ######
 
-    arbol = createTree(pipeline)
+    background = createBackground(pipeline)
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
     glfw.swap_interval(0)
+
+    # Ubicación de nodos:
+    hojas= sg.findNode(background, "hojas")
+    arboles1 = sg.findNode(background, "arboles1")
+    arboles2 = sg.findNode(background, "arboles2")
+    lineas1 = sg.findNode(background, "Lineatransito1")
+    lineas2 = sg.findNode(background, "Lineatransito2")
+
+    # Variables útiles para el procedimiento
     t0 = glfw.get_time()
     dx = 0
+    desplazamiento = 0
+    dy = 2
+    dy2 = 0
     # Application loop
     while not glfw.window_should_close(window):
         # Variables del tiempo
@@ -145,12 +174,24 @@ if __name__ == "__main__":
 
         # Se agregan los movimientos durante escena
         dx += delta*2
-        hojas= sg.findNode(arbol, "hojas")
+        desplazamiento = (desplazamiento + delta)%4
+        desplazamiento2 = (desplazamiento + 2 + delta)%4
+        dy = 2 - desplazamiento
+        dy2 = 2 - desplazamiento2
         hojas.transform = tr.matmul([tr.translate(0, 0.3, 0),tr.shearing(0.2*np.sin(dx), 0, 0, 0, 0, 0)])
+        arboles1.transform = tr.translate(0, dy, 0)
+        arboles2.transform = tr.translate(0, dy2, 0)
+        lineas1.transform = tr.translate(0, dy, 0)
+        lineas2.transform = tr.translate(0, dy2, 0)
 
-        # Se dibuja el grafo de escena principal
-        glUseProgram(pipeline.shaderProgram)
-        sg.drawSceneGraphNode(arbol, pipeline, "transform")
+
+        # Se dibuja el grafo de escena que se selecciona. (Sirve para probar que tal estaban los dibujos)
+        if controller.what_to_draw == 1:
+            glUseProgram(pipeline.shaderProgram)
+            sg.drawSceneGraphNode(background, pipeline, "transform")
+        #elif controller.what_to_draw == 2:
+            #glUseProgram(pipeline.shaderProgram)
+            #sg.drawSceneGraphNode(calle, pipeline, "transform")
 
         # Se dibuja el grafo de escena con texturas
         #glUseProgram(tex_pipeline.shaderProgram)
@@ -160,6 +201,6 @@ if __name__ == "__main__":
         glfw.swap_buffers(window)
 
     # freeing GPU memory
-    arbol.clear()
+    background.clear()
     
     glfw.terminate()

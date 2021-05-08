@@ -1,3 +1,6 @@
+# Survival
+
+from OpenGL.GL import *
 import glfw
 import OpenGL.GL.shaders
 import numpy as np
@@ -17,10 +20,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 1 byte = 8 bits
 SIZE_IN_BYTES = 4
 
-# A class to store the application control
+
+# Clase controlador con variables para manejar el estado de ciertos botones
 class Controller:
     def __init__(self):
         self.fillPolygon = True
+        self.is_w_pressed = False
+        self.is_s_pressed = False
+        self.is_a_pressed = False
+        self.is_d_pressed = False
 
 
 # we will use the global controller as communication with the callback function
@@ -28,20 +36,45 @@ controller = Controller()
 
 # This function will be executed whenever a key is pressed or released
 def on_key(window, key, scancode, action, mods):
-
-    if action != glfw.PRESS:
-        return
     
     global controller
+    
+    # Caso de detectar la tecla [W], actualiza estado de variable
+    if key == glfw.KEY_W:
+        if action ==glfw.PRESS:
+            controller.is_w_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_w_pressed = False
 
-    if key == glfw.KEY_SPACE:
+    # Caso de detectar la tecla [S], actualiza estado de variable
+    if key == glfw.KEY_S:
+        if action ==glfw.PRESS:
+            controller.is_s_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_s_pressed = False
+
+    # Caso de detectar la tecla [A], actualiza estado de variable
+    if key == glfw.KEY_A:
+        if action ==glfw.PRESS:
+            controller.is_a_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_a_pressed = False
+
+    # Caso de detectar la tecla [D], actualiza estado de variable
+    if key == glfw.KEY_D:
+        if action ==glfw.PRESS:
+            controller.is_d_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_d_pressed = False
+
+    # Caso de detecar la barra espaciadora, se cambia el metodo de dibujo
+    if key == glfw.KEY_SPACE and action ==glfw.PRESS:
         controller.fillPolygon = not controller.fillPolygon
 
-    elif key == glfw.KEY_ESCAPE:
+    # Caso en que se cierra la ventana
+    elif key == glfw.KEY_ESCAPE and action ==glfw.PRESS:
         glfw.set_window_should_close(window, True)
 
-    else:
-        print('Unknown key')
 
 
 if __name__ == "__main__":
@@ -65,39 +98,39 @@ if __name__ == "__main__":
     # Connecting the callback function 'on_key' to handle keyboard events
     glfw.set_key_callback(window, on_key)
 
-    # Creating our shader program and telling OpenGL to use it
+    # Pipeline para dibujar shapes con colores interpolados
     pipeline = es.SimpleTransformShaderProgram()
-    glUseProgram(pipeline.shaderProgram)
+    # Pipeline para dibujar shapes con texturas
+    tex_pipeline = es.SimpleTextureTransformShaderProgram()
 
     # Setting up the clear screen color
     glClearColor(0.15, 0.15, 0.15, 1.0)
 
-    # Creating shapes on GPU memory
-    shapeTriangle = bs.createRainbowTriangle()
-    gpuTriangle = es.GPUShape().initBuffers()
-    pipeline.setupVAO(gpuTriangle)
-    gpuTriangle.fillBuffers(shapeTriangle.vertices, shapeTriangle.indices, GL_STATIC_DRAW)
 
-    shapeQuad = bs.createRainbowQuad()
-    gpuQuad = es.GPUShape().initBuffers()
-    pipeline.setupVAO(gpuQuad)
-    gpuQuad.fillBuffers(shapeQuad.vertices, shapeQuad.indices, GL_STATIC_DRAW)
+    # Enabling transparencies
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+    
+    ######### SHAPES ######
+
+    arbol = createTree(pipeline)
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
-
     # glfw will swap buffers as soon as possible
     glfw.swap_interval(0)
-
+    t0 = glfw.get_time()
+    dx = 0
     # Application loop
     while not glfw.window_should_close(window):
-        
-        #Variable de tiempo
-        t1=glfw.get_time()
+        # Variables del tiempo
+        t1 = glfw.get_time()
+        delta = t1 -t0
+        t0 = t1
 
         # Measuring performance
-        perfMonitor.update(t1)
+        perfMonitor.update(glfw.get_time())
         glfw.set_window_title(window, title + str(perfMonitor))
-
         # Using GLFW to check for input events
         glfw.poll_events()
 
@@ -110,56 +143,23 @@ if __name__ == "__main__":
         # Clearing the screen
         glClear(GL_COLOR_BUFFER_BIT)
 
-        # Using the time as the theta parameter
-        theta = glfw.get_time()
+        # Se agregan los movimientos durante escena
+        dx += delta*2
+        hojas= sg.findNode(arbol, "hojas")
+        hojas.transform = tr.matmul([tr.translate(0, 0.3, 0),tr.shearing(0.2*np.sin(dx), 0, 0, 0, 0, 0)])
 
-        # Triangle
-        triangleTransform = tr.matmul([
-            tr.translate(0.5, 0.5, 0),
-            tr.rotationZ(2 * theta),
-            tr.uniformScale(0.5)
-        ])
+        # Se dibuja el grafo de escena principal
+        glUseProgram(pipeline.shaderProgram)
+        sg.drawSceneGraphNode(arbol, pipeline, "transform")
 
-        # Updating the transform attribute
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, triangleTransform)
-
-        # Drawing function
-        pipeline.drawCall(gpuTriangle)
-
-        # Another instance of the triangle
-        triangleTransform2 = tr.matmul([
-            tr.translate(-0.5, 0.5, 0),
-            tr.scale(
-                0.5 + 0.2 * np.cos(1.5 * theta),
-                0.5 + 0.2 * np.sin(2 * theta),
-                0)
-        ])
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, triangleTransform2)
-        pipeline.drawCall(gpuTriangle)
-
-        # Quad
-        quadTransform = tr.matmul([
-            tr.translate(-0.5, -0.5, 0),
-            tr.rotationZ(-theta),
-            tr.uniformScale(0.7)
-        ])
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, quadTransform)
-        pipeline.drawCall(gpuQuad)
-
-        # Another instance of the Quad
-        quadTransform2 = tr.matmul([
-            tr.translate(0.5, -0.5, 0),
-            tr.shearing(0.3 * np.cos(theta), 0, 0, 0, 0, 0),
-            tr.uniformScale(0.7)
-        ])
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, quadTransform2)
-        pipeline.drawCall(gpuQuad)
+        # Se dibuja el grafo de escena con texturas
+        #glUseProgram(tex_pipeline.shaderProgram)
+        #sg.drawSceneGraphNode(tex_scene, tex_pipeline, "transform")
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)
 
     # freeing GPU memory
-    gpuTriangle.clear()
-    gpuQuad.clear()
+    arbol.clear()
     
     glfw.terminate()

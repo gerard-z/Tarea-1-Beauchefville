@@ -4,6 +4,7 @@
 """ Modificado, agregando algunas otras figuras básicas y eliminando las figuras 3D"""
 
 import math
+import numpy as np
 
 __author__ = "Daniel Calderon"
 __license__ = "MIT"
@@ -146,3 +147,45 @@ def createRainbowCircle(N):
     return Shape(vertices, indices)
 
 
+def createColorCircleLines(N, r, g, b):
+    """ int float float float -> Shape()
+        Recibe el número de vértices con el que se desea crear el círculo,
+        también los componentes r g b para colorear el mismo círculo,
+        el diámetro del círculo es de 1, con el centro en el 0.
+        Dibujado con líneas
+        """
+    assert type(N)==int, "El número de intervalos debe ser entero"
+    #vértices e índices del círculo
+    vertices = np.zeros(N*6)
+    indices = np.array(range(N))
+    dtheta = 2 * np.pi/N
+
+    for i in range(N):
+        theta = i * dtheta
+        vertices[i*6:i*6+6] = [0.5 * np.cos(theta), 0.5 * np.sin(theta), 0, r, g, b]
+    
+    return Shape(vertices, indices)
+
+def createColorCircle(N, r, g, b):
+    """ int float float float -> Shape()
+        Recibe el número de vértices con el que se desea crear el círculo,
+        también los componentes r g b para colorear el mismo círculo,
+        el diámetro del círculo es de 1, con el centro en el 0.
+        Dibujado con triángulos.
+        """
+    assert type(N)==int, "El número de intervalos debe ser entero"
+    #vértices e índices del círculo
+    vertices = np.zeros(N*6)
+    indices = np.zeros(N*3)
+    dtheta = 2 * np.pi/(N-2)
+    vertices[0:6] = [0, 0, 0, r, g, b]
+
+    for i in range(N-1):
+        theta = i * dtheta
+        j= (i+1)*6
+        vertices[j:j+6] = [0.5 * np.cos(theta), 0.5 * np.sin(theta), 0, r, g, b]
+        indices[i*3:i*3+3] = [0, i, i+1]
+
+    #indices[N-6:N] = [0, N-3, N-2, 0, N-2, N-1]
+    
+    return Shape(vertices, indices)

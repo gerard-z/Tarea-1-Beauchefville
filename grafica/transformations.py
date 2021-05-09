@@ -14,21 +14,24 @@ def identity():
 
 def reflectionY():
     return np.array([
-        [-1,0,0],
-        [0,1,0],
-        [0,0,1]], dtype = np.float32)
+        [-1,0,0,0],
+        [0,1,0,0],
+        [0,0,1,0],
+        [0,0,0,1]], dtype = np.float32)
 
 def reflectionX():
     return np.array([
-        [1,0,0],
-        [0,-1,0],
-        [0,0,1]], dtype = np.float32)
+        [1,0,0,0],
+        [0,-1,0,0],
+        [0,0,1,0],
+        [0,0,0,1]], dtype = np.float32)
 
 def reflectionOrigin():
     return np.array([
-        [-1,0,0],
-        [0,-1,0],
-        [0,0,1]], dtype = np.float32)
+        [-1,0,0,0],
+        [0,-1,0,0],
+        [0,0,1,0],
+        [0,0,0,1]], dtype = np.float32)
 
 def uniformScale(s):
     return np.array([

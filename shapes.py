@@ -220,28 +220,6 @@ def createTextureDoor():
         
     return bs.Shape(vertices, indices)
 
-def createTextureArch(N):
-    """ int -> Shape
-        Create a arch by a semi circle with N vertices, this function was maded thinking that the texture
-        its a thin and long rectangle"""
-
-    assert type(N)==int, "El número de intervalos debe ser entero"
-    #vértices e índices del círculo
-    vertices = np.zeros(N*5)
-    indices = np.zeros(N*3)
-    dtheta = np.pi/(N-2)
-    vertices[0:5] = [0, 0, 0, 1, 0.5]
-
-    for i in range(0, N-1, 2):
-        theta = i * dtheta
-        theta2 = (i+1) * dtheta
-        j= (i+1)*5
-        vertices[j:j+5] = [0.5 * np.cos(theta), 0.5 * np.sin(theta), 0, 0, 1]
-        vertices[j+5:j+10] = [0.5 * np.cos(theta2), 0.5 * np.sin(theta2), 0, 0, 0]
-        indices[i*3:i*3+6] = [0, i, i+1, 0, i+1, i+2]
-    
-    return bs.Shape(vertices, indices)
-
 def createStore(pipeline):
     doorPath = os.path.join(spritesDirectory, "door.png")
     wallPath = os.path.join(spritesDirectory, "wood.png")
@@ -271,7 +249,7 @@ def createStore(pipeline):
                                        minFilterMode=GL_NEAREST, maxFilterMode=GL_NEAREST,
                                        boolMipmap=False)
 
-    archTex = createTextureArch(27)
+    archTex = bs.createTextureArch(27)
     gpuArchTex = createTextureGPUShape(archTex, pipeline, ceilBPath)
 
     signTex = bs.createTextureQuad(1,1)
@@ -327,21 +305,7 @@ def createStore(pipeline):
 def createAnimatedSign(pipeline):
     storeSignPath = os.path.join(spritesDirectory, "Store sign.png")
 
-    #Vertices
-    vertices = [
-    #   positions      
-        -0.5, -0.5, 0.0,
-         0.5, -0.5, 0.0,
-         0.5,  0.5, 0.0,
-        -0.5,  0.5, 0.0]
-
-    # Defining connections among vertices
-    # We have a triangle every 3 indices specified
-    indices = [
-         0, 1, 2,
-         2, 3, 0]
-
-    storeSignTex = bs.Shape(vertices, indices)
+    storeSignTex = bs.createSimpleQuad()
     gpuStoreSignTex = createTextureGPUShape(storeSignTex, pipeline, storeSignPath,
                                             sWrapMode=GL_CLAMP_TO_EDGE, tWrapMode=GL_CLAMP_TO_EDGE,
                                             minFilterMode=GL_LINEAR_MIPMAP_NEAREST, maxFilterMode=GL_NEAREST,
@@ -353,3 +317,110 @@ def createAnimatedSign(pipeline):
     storeSign.childs += [gpuStoreSignTex]
 
     return storeSign
+
+def createDetails(pipeline):
+    greenLine = bs.createZicZacLineStrip(5, 0.2, 0, 0.5, 0)
+    gpuGreenLine = createGPUShape(greenLine, pipeline)
+
+    brownLine = bs.createZicZacLineStrip(20, 0.05, 169/255, 99/255, 49/255)
+    gpuBrownLine = createGPUShape(brownLine, pipeline)
+
+    blackSpiral = bs.createSpiralLineStrip(30, 3, 0, 0, 0)
+    gpuBlackSpiral = createGPUShape(blackSpiral, pipeline)
+
+    #Grass
+    grass = sg.SceneGraphNode("grass")
+    grass.transform = tr.uniformScale(0.1)
+    grass.childs += [gpuGreenLine]
+
+    grass1 = sg.SceneGraphNode("grass1")
+    grass1.transform = tr.translate(-0.05, -0.75 , 0)
+    grass1.childs += [grass]
+
+    grass2 = sg.SceneGraphNode("grass2")
+    grass2.transform = tr.translate(-0.05, -0.1 , 0)
+    grass2.childs += [grass]
+
+    grass3 = sg.SceneGraphNode("grass3")
+    grass3.transform = tr.translate(-0.05, 0.55 , 0)
+    grass3.childs += [grass]
+
+    #Grass group
+    grassGroup = sg.SceneGraphNode("grassGroup")
+    grassGroup.transform = tr.identity()
+    grassGroup.childs += [grass1, grass2, grass3]
+
+    grassGroup1 = sg.SceneGraphNode("grassGroup1")
+    grassGroup1.transform = tr.translate(0.1, 0.05, 0)
+    grassGroup1.childs += [grass1, grass2, grass3]
+
+    grassGroup2 = sg.SceneGraphNode("grassGroup1")
+    grassGroup2.transform = tr.translate(0.05, -0.1, 0)
+    grassGroup2.childs += [grass1, grass2, grass3]
+
+    GrassGroup1 = sg.SceneGraphNode("grassGroup2")
+    GrassGroup1.transform = tr.translate(-0.75, -0.2, 0)
+    GrassGroup1.childs += [grassGroup, grassGroup1, grassGroup2]
+
+    GrassGroup2 = sg.SceneGraphNode("grassGroup3")
+    GrassGroup2.transform = tr.translate(0.75, -0.2, 0)
+    GrassGroup2.childs += [grassGroup, grassGroup1, grassGroup2]
+
+    #Log
+    log1 = sg.SceneGraphNode("log1")
+    log1.transform = tr.matmul([tr.rotation(np.pi/2-0.1), tr.uniformScale(0.5)])
+    log1.childs += [gpuBrownLine]
+
+    log2 = sg.SceneGraphNode("log2")
+    log2.transform = tr.matmul([tr.translate(0.2, 0, 0), tr.reflectionY()])
+    log2.childs += [log1]
+
+    log = sg.SceneGraphNode("log")
+    log.transform = tr.matmul([tr.translate(-0.1, 0, 0), tr.uniformScale(0.2)])
+    log.childs += [log1, log2]
+
+    Log1 = sg.SceneGraphNode("Log1")
+    Log1.transform = tr.translate(0, -0.7, 0)
+    Log1.childs += [log]
+
+    Log2 = sg.SceneGraphNode("Log2")
+    Log2.transform = tr.translate(0, -0.05, 0)
+    Log2.childs += [log]
+
+    Log3 = sg.SceneGraphNode("Log3")
+    Log3.transform = tr.translate(0, 0.6, 0)
+    Log3.childs += [log]
+
+    #Log group
+    logGroup1 = sg.SceneGraphNode("logGroup")
+    logGroup1.transform = tr.translate(-0.67,-0.03,0)
+    logGroup1.childs = [Log1, Log2, Log3]
+
+    logGroup2 = sg.SceneGraphNode("logGroup")
+    logGroup2.transform = tr.translate(0.83,-0.03,0)
+    logGroup2.childs = [Log1, Log2, Log3]
+
+    #scratch
+    scratch1 = sg.SceneGraphNode("scratch")
+    scratch1.transform = tr.matmul([tr.translate(0.4,0.3,0), tr.uniformScale(0.1)])
+    scratch1.childs += [gpuBlackSpiral]
+
+    scratch2 = sg.SceneGraphNode("scratch")
+    scratch2.transform = tr.matmul([tr.translate(-0.2,0.6,0), tr.uniformScale(0.1)])
+    scratch2.childs += [gpuBlackSpiral]
+
+    #decorations
+    decoration1 = sg.SceneGraphNode("decoration1")
+    decoration1.transform = tr.identity()
+    decoration1.childs += [GrassGroup1, GrassGroup2, logGroup1, logGroup2, scratch1]
+
+    decoration2 = sg.SceneGraphNode("decoration2")
+    decoration2.transform = tr.identity()
+    decoration2.childs += [GrassGroup1, GrassGroup2, logGroup1, logGroup2, scratch2]
+
+    decorations = sg.SceneGraphNode("decorations")
+    decorations.transform = tr.identity()
+    decorations.childs += [decoration1, decoration2]
+
+
+    return decorations

@@ -29,7 +29,7 @@ class Controller:
         self.is_s_pressed = False
         self.is_a_pressed = False
         self.is_d_pressed = False
-        self.what_to_draw = 0
+        self.what_to_draw = 1
 
 
 # we will use the global controller as communication with the callback function
@@ -136,6 +136,7 @@ if __name__ == "__main__":
     background = createBackground(pipeline)
     store = createStore(tex_pipeline)
     storeSign = createAnimatedSign(animated3Tex_pipeline)
+    details = createDetails(pipeline)
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
@@ -147,9 +148,12 @@ if __name__ == "__main__":
     arboles2 = sg.findNode(background, "arboles2")
     lineas1 = sg.findNode(background, "Lineatransito1")
     lineas2 = sg.findNode(background, "Lineatransito2")
+    decoracion1 = sg.findNode(details, "decoration1")
+    decoracion2 = sg.findNode(details, "decoration2")
 
     #Distinción de frames en las texturas:
-    storeSignFrame = np.array([0.18, 0.5, 1])
+    FrameInit = np.array([0.0, 0.34, 0.64])
+    FrameFin = np.array([0.33, 0.63, 1])
     actual_sprite=0
 
 
@@ -186,8 +190,8 @@ if __name__ == "__main__":
 
         # Se agregan los movimientos durante escena
         dx += delta*2
-        desplazamiento = (desplazamiento + delta)%4
-        desplazamiento2 = (desplazamiento + 2 + delta)%4
+        desplazamiento = (desplazamiento + delta/4)%4
+        desplazamiento2 = (desplazamiento + 2 + delta/4)%4
         dy = 2 - desplazamiento
         dy2 = 2 - desplazamiento2
         hojas.transform = tr.matmul([tr.translate(0, 0.3, 0),tr.shearing(0.2*np.sin(dx), 0, 0, 0, 0, 0)])
@@ -195,6 +199,8 @@ if __name__ == "__main__":
         arboles2.transform = tr.translate(0, dy2, 0)
         lineas1.transform = tr.translate(0, dy, 0)
         lineas2.transform = tr.translate(0, dy2, 0)
+        decoracion1.transform = tr.translate(0, dy, 0)
+        decoracion2.transform = tr.translate(0, dy2, 0)
 
         #Animación:
         if t3>=0 and t3<1:
@@ -209,16 +215,22 @@ if __name__ == "__main__":
         if controller.what_to_draw == 1:
             glUseProgram(pipeline.shaderProgram)
             sg.drawSceneGraphNode(background, pipeline, "transform")
+            sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
+            
         elif controller.what_to_draw == 2:
             glUseProgram(tex_pipeline.shaderProgram)
             sg.drawSceneGraphNode(store, tex_pipeline, "transform")
 
             glUseProgram(animated3Tex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, np.array([0, 0, 0.5]))
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, storeSignFrame)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
             glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), actual_sprite)
 
             sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
+        elif controller.what_to_draw == 3:
+            glUseProgram(pipeline.shaderProgram)
+            sg.drawSceneGraphNode(background, pipeline, "transform")
+            #sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
 
         # Se dibuja el grafo de escena con texturas
         #glUseProgram(tex_pipeline.shaderProgram)
@@ -230,5 +242,7 @@ if __name__ == "__main__":
     # freeing GPU memory
     background.clear()
     store.clear()
+    storeSign.clear()
+    details.clear()
     
     glfw.terminate()

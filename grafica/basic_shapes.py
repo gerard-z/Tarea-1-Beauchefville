@@ -5,6 +5,7 @@
 
 import math
 import numpy as np
+import grafica.transformations as tr
 
 __author__ = "Daniel Calderon"
 __license__ = "MIT"
@@ -173,7 +174,7 @@ def createColorCircle(N, r, g, b):
         el diámetro del círculo es de 1, con el centro en el 0.
         Dibujado con triángulos.
         """
-    assert type(N)==int, "El número de intervalos debe ser entero"
+    assert type(N)==int and N>0, "El número de intervalos debe ser entero positivo"
     #vértices e índices del círculo
     vertices = np.zeros(N*6)
     indices = np.zeros(N*3)
@@ -189,3 +190,104 @@ def createColorCircle(N, r, g, b):
     #indices[N-6:N] = [0, N-3, N-2, 0, N-2, N-1]
     
     return Shape(vertices, indices)
+
+def createTextureArch(N):
+    """ int -> Shape
+    Crea un arco a partir de una semi circunferencia de N vértices, esta función fue hecha pensando en que la textura
+    a entregar es un rectangulo largo y angosto, que corresponderá a cada triángulo de la figura."""
+
+    assert type(N)==int and N>0, "El número de intervalos debe ser entero positivo"
+    #vértices e índices del círculo
+    vertices = np.zeros(N*5)
+    indices = np.zeros(N*3)
+    dtheta = np.pi/(N-2)
+    vertices[0:5] = [0, 0, 0, 1, 0.5]
+
+    for i in range(0, N-1, 2):
+        theta = i * dtheta
+        theta2 = (i+1) * dtheta
+        j= (i+1)*5
+        vertices[j:j+5] = [0.5 * np.cos(theta), 0.5 * np.sin(theta), 0, 0, 1]
+        vertices[j+5:j+10] = [0.5 * np.cos(theta2), 0.5 * np.sin(theta2), 0, 0, 0]
+        indices[i*3:i*3+6] = [0, i, i+1, 0, i+1, i+2]
+    
+    return Shape(vertices, indices)
+
+def createSimpleQuad():
+    """ -> Shape 
+    Esta función está pensada para crear los vértices de posición de un cuadrado sin ningún otro componente,
+    de esta manera, las coordenadas de textura y colores serán agregados después directamente en la memoria"""
+    #Vertices
+    vertices = [
+    #   positions      
+        -0.5, -0.5, 0.0,
+         0.5, -0.5, 0.0,
+         0.5,  0.5, 0.0,
+        -0.5,  0.5, 0.0]
+
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+         0, 1, 2,
+         2, 3, 0]
+
+    return Shape(vertices, indices)
+
+def createZicZacLineStrip(N, A, r, g, b):
+    """ int float float float float -> shape
+    Crea una línea zic zac de N cambios de direcciones y amplitud A, permitiendo así agregar detalles a figuras.
+    Si N=0, entonces es una línea recta de largo 1.
+    El signo de A modifica si va primero hacia arriba o abajo en el zic zac."""
+    assert type(N)==int and N>=0, "El número de intervalos debe ser entero positivo"
+
+    vertices = np.zeros((N+2)*6)
+    indices = np.array(range(N+2))
+    vertices[0:6] = [-0.5, 0, 0, r, g, b]
+    vertices[(N+1)*6:(N+2)*6] = [0.5, 0, 0, r, g, b]
+
+    if N==0:
+        return Shape(vertices, indices)
+    
+    offset = 1/(N+1)
+    for i in range(1, N+1):
+        vertices[i*6:(i+1)*6] = [-0.5 + i * offset, A, 0, r, g, b]
+        A= -A
+    
+    return Shape(vertices, indices)
+
+def createSpiralLineStrip(N, L, r, g, b):
+    """ int float int float float float -> Shape
+    Función que genera una espiral a través de una transformación geométrica, N es el número de vértices que tendrá
+    sin incluir el centro, y L serán el número de vueltas que da alrededor del centro. El radio máximo es de 0.5.
+    Utiliza transformaciones matriciales para la figura"""
+
+    assert type(N)== int and N>0, "N debe ser un entero positivo"
+    assert type(L) == int and L>0, "L debe ser un entero positivo"
+    
+    vertices= np.zeros((N+1)*6)
+    indices = np.array(range(N+1))
+
+    NL = (N)//L # Número de vértices por vuelta, descontando el vértice del centro
+    dtheta = 2 * np.pi / NL
+    R= 0.5/L  # Radio máximo que tendrá un loop
+
+    x = np.array([1,0,0,1]) # Vector de referencia para las transformaciones
+
+    for l in range(1,L+1):
+        rl = l * R  #radio máximo
+        r0= (l-1) * R #radio mínimo
+        radio = rl-r0
+        for i in range(NL):
+            theta = i * dtheta
+            dr = r0 + i * radio / NL
+            transformation = tr.matmul([tr.rotation(theta), tr.uniformScale(dr)])
+            xp = tr.matmul([transformation, x])
+            #Se vuelve a los vértices con coordenadas originales
+            position = np.array([xp[0], xp[1], xp[2]]) / xp[3] 
+            vertices[((l-1) * NL + i)*6 : ((l-1) * NL + i + 1)*6] = [position[0], position[1], position[2], r, g, b]
+    
+    #Agregar el vértice final
+    vertices[N * 6 : N * 6 + 6] = [0.5, 0, 0, r, g, b]
+    
+    return Shape(vertices, indices)
+

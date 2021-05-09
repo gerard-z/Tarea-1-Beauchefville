@@ -107,7 +107,7 @@ class SimpleTransformShaderProgram:
         glBindVertexArray(0)
 
 
-    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
+    def drawCall(self, gpuShape, mode):
         assert isinstance(gpuShape, GPUShape)
 
         # Binding the VAO and executing the draw call
@@ -180,7 +180,7 @@ class SimpleTextureTransformShaderProgram:
         glBindVertexArray(0)
 
 
-    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
+    def drawCall(self, gpuShape, mode):
         assert isinstance(gpuShape, GPUShape)
 
         glBindVertexArray(gpuShape.vao)
@@ -263,7 +263,7 @@ class SimpleTextureTransform3FrameAnimationShaderProgram:
         glBindVertexArray(0)
 
 
-    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
+    def drawCall(self, gpuShape, mode):
         assert isinstance(gpuShape, GPUShape)
 
         glBindVertexArray(gpuShape.vao)

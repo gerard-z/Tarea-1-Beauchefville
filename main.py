@@ -119,6 +119,8 @@ if __name__ == "__main__":
     pipeline = es.SimpleTransformShaderProgram()
     # Pipeline para dibujar shapes con texturas
     tex_pipeline = es.SimpleTextureTransformShaderProgram()
+    # Pipeline para dibujar shapes con texturas animadas (3 fotogramas)
+    animated3Tex_pipeline = es.SimpleTextureTransform3FrameAnimationShaderProgram()
 
     # Setting up the clear screen color
     glClearColor(0.15, 0.15, 0.15, 1.0)
@@ -132,6 +134,8 @@ if __name__ == "__main__":
     ######### SHAPES ######
 
     background = createBackground(pipeline)
+    store = createStore(tex_pipeline)
+    storeSign = createAnimatedSign(animated3Tex_pipeline)
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
@@ -143,6 +147,11 @@ if __name__ == "__main__":
     arboles2 = sg.findNode(background, "arboles2")
     lineas1 = sg.findNode(background, "Lineatransito1")
     lineas2 = sg.findNode(background, "Lineatransito2")
+
+    #Distinción de frames en las texturas:
+    storeSignFrame = np.array([0.18, 0.5, 1])
+    actual_sprite=0
+
 
     # Variables útiles para el procedimiento
     t0 = glfw.get_time()
@@ -156,6 +165,9 @@ if __name__ == "__main__":
         t1 = glfw.get_time()
         delta = t1 -t0
         t0 = t1
+
+        t3= glfw.get_time()%3
+
 
         # Measuring performance
         perfMonitor.update(glfw.get_time())
@@ -184,14 +196,29 @@ if __name__ == "__main__":
         lineas1.transform = tr.translate(0, dy, 0)
         lineas2.transform = tr.translate(0, dy2, 0)
 
+        #Animación:
+        if t3>=0 and t3<1:
+            actual_sprite=0
+        elif t3>=1 and t3<2:
+            actual_sprite=1
+        else:
+            actual_sprite=2
+
 
         # Se dibuja el grafo de escena que se selecciona. (Sirve para probar que tal estaban los dibujos)
         if controller.what_to_draw == 1:
             glUseProgram(pipeline.shaderProgram)
             sg.drawSceneGraphNode(background, pipeline, "transform")
-        #elif controller.what_to_draw == 2:
-            #glUseProgram(pipeline.shaderProgram)
-            #sg.drawSceneGraphNode(calle, pipeline, "transform")
+        elif controller.what_to_draw == 2:
+            glUseProgram(tex_pipeline.shaderProgram)
+            sg.drawSceneGraphNode(store, tex_pipeline, "transform")
+
+            glUseProgram(animated3Tex_pipeline.shaderProgram)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, np.array([0, 0, 0.5]))
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, storeSignFrame)
+            glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), actual_sprite)
+
+            sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
 
         # Se dibuja el grafo de escena con texturas
         #glUseProgram(tex_pipeline.shaderProgram)
@@ -202,5 +229,6 @@ if __name__ == "__main__":
 
     # freeing GPU memory
     background.clear()
+    store.clear()
     
     glfw.terminate()

@@ -7,6 +7,13 @@ import grafica.basic_shapes as bs
 import grafica.easy_shaders as es
 import grafica.transformations as tr
 import grafica.scene_graph as sg
+import sys, os.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+#Directorio de sprites
+thisFilePath = os.path.abspath(__file__)
+thisFolderPath = os.path.dirname(thisFilePath)
+spritesDirectory = os.path.join(thisFolderPath,"sprites")
 
 def createGPUShape(shape, pipeline):
     # Funcion Conveniente para facilitar la inicializacion de un GPUShape
@@ -15,13 +22,17 @@ def createGPUShape(shape, pipeline):
     gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STATIC_DRAW)
     return gpuShape
 
-def createTextureGPUShape(shape, pipeline, path):
+def createTextureGPUShape(shape, pipeline, path,
+                        sWrapMode=GL_CLAMP_TO_EDGE, tWrapMode=GL_CLAMP_TO_EDGE, minFilterMode=GL_NEAREST, maxFilterMode=GL_NEAREST,
+                        boolMipmap=False):
     # Funcion Conveniente para facilitar la inicializacion de un GPUShape con texturas
     gpuShape = es.GPUShape().initBuffers()
     pipeline.setupVAO(gpuShape)
     gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STATIC_DRAW)
     gpuShape.texture = es.textureSimpleSetup(
-        path, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST)
+        path, sWrapMode, tWrapMode, minFilterMode, maxFilterMode)
+    if boolMipmap:
+        glGenerateMipmap(GL_TEXTURE_2D)
     return gpuShape
 
 def createTree(pipeline):
@@ -188,4 +199,157 @@ def createBackground(pipeline):
 
     return background
 
+def createTextureDoor():
+    #Creating the door with vertices and index
+    vertices = [
+    #   positions        texture
+        -0.3, -0.5, 0.0,  0, 1,
+           0, -0.5, 0.0,  1, 1,
+           0,  0.5, 0.0,  1, 0,
+        -0.3,  0.5, 0.0,  0, 0,
+         0.3,  0.5, 0.0,  0, 0,
+         0.3, -0.5, 0.0,  0, 1] #Se aprovecha la simetría para crear una puerta doble a la tienda
 
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+         0, 1, 2,
+         2, 3, 0,
+         2, 1, 4,
+         1, 4, 5]
+        
+    return bs.Shape(vertices, indices)
+
+def createTextureArch(N):
+    """ int -> Shape
+        Create a arch by a semi circle with N vertices, this function was maded thinking that the texture
+        its a thin and long rectangle"""
+
+    assert type(N)==int, "El número de intervalos debe ser entero"
+    #vértices e índices del círculo
+    vertices = np.zeros(N*5)
+    indices = np.zeros(N*3)
+    dtheta = np.pi/(N-2)
+    vertices[0:5] = [0, 0, 0, 1, 0.5]
+
+    for i in range(0, N-1, 2):
+        theta = i * dtheta
+        theta2 = (i+1) * dtheta
+        j= (i+1)*5
+        vertices[j:j+5] = [0.5 * np.cos(theta), 0.5 * np.sin(theta), 0, 0, 1]
+        vertices[j+5:j+10] = [0.5 * np.cos(theta2), 0.5 * np.sin(theta2), 0, 0, 0]
+        indices[i*3:i*3+6] = [0, i, i+1, 0, i+1, i+2]
+    
+    return bs.Shape(vertices, indices)
+
+def createStore(pipeline):
+    doorPath = os.path.join(spritesDirectory, "door.png")
+    wallPath = os.path.join(spritesDirectory, "wood.png")
+    windowPath = os.path.join(spritesDirectory, "window.png")
+    lampPath = os.path.join(spritesDirectory, "lamp.png")
+    ceilPath = os.path.join(spritesDirectory, "ceil.png")
+    ceilBPath = os.path.join(spritesDirectory, "ceilb.png")
+    signPath = os.path.join(spritesDirectory, "sign.png")
+
+    
+    doorTex = createTextureDoor()
+    gpuDoorTex = createTextureGPUShape(doorTex, pipeline, doorPath, 
+                                       GL_REPEAT, GL_REPEAT, GL_LINEAR, GL_LINEAR)
+
+    wallQuad = bs.createTextureQuad(3,1)
+    gpuWallQuad = createTextureGPUShape(wallQuad, pipeline, wallPath,
+                                        sWrapMode=GL_REPEAT, tWrapMode=GL_REPEAT)
+    
+    windowTex = bs.createTextureQuad(1,1)
+    gpuWindowTex = createTextureGPUShape(windowTex, pipeline, windowPath)
+
+    lampTex = bs.createTextureQuad(1,1)
+    gpuLampTex = createTextureGPUShape(lampTex, pipeline, lampPath)
+
+    ceilTex = bs.createTextureQuad(1,1)
+    gpuCeilTex = createTextureGPUShape(ceilTex, pipeline, ceilPath,
+                                       minFilterMode=GL_NEAREST, maxFilterMode=GL_NEAREST,
+                                       boolMipmap=False)
+
+    archTex = createTextureArch(27)
+    gpuArchTex = createTextureGPUShape(archTex, pipeline, ceilBPath)
+
+    signTex = bs.createTextureQuad(1,1)
+    gpuSignTex = createTextureGPUShape(signTex, pipeline, signPath)
+
+    #wall
+    wall = sg.SceneGraphNode("wall")
+    wall.transform = tr.scale(1.8,1,1)
+    wall.childs += [gpuWallQuad]
+
+    #door
+    door = sg.SceneGraphNode("door")
+    door.transform = tr.matmul([tr.translate(0.55, -0.25 ,0), tr.uniformScale(0.5)])
+    door.childs += [gpuDoorTex]
+
+    #window
+    window1 = sg.SceneGraphNode("window")
+    window1.transform = tr.matmul([tr.translate(-0.6,-0.1,0), tr.uniformScale(0.25)])
+    window1.childs += [gpuWindowTex]
+
+    window2 = sg.SceneGraphNode("window")
+    window2.transform = tr.matmul([tr.translate(0.0,-0.1,0), tr.uniformScale(0.25)])
+    window2.childs += [gpuWindowTex]
+
+    #lamp
+    lamp = sg.SceneGraphNode("lamp")
+    lamp.transform = tr.matmul([tr.translate(0.55, 0.1, 0),tr.uniformScale(0.25)])
+    lamp.childs += [gpuLampTex]
+
+    #ceil
+    ceil = sg.SceneGraphNode("ceil")
+    ceil.transform = tr.matmul([tr.translate(0, 0.35, 0), tr.scale(2.2, 0.4, 1)])
+    ceil.childs += [gpuCeilTex]
+
+    #arch
+    arch = sg.SceneGraphNode("arch")
+    arch.transform = tr.matmul([tr.translate(0, 0.5, 0), tr.scale(1.8, 0.5, 1)])
+    arch.childs += [gpuArchTex]
+
+    #sign
+    sign = sg.SceneGraphNode("sign")
+    sign.transform = tr.matmul([tr.translate(0, 0.5, 0), tr.scale(0.9, 0.36, 1)])
+    sign.childs += [gpuSignTex]
+
+    #store
+    store = sg.SceneGraphNode("store")
+    store.transform = tr.matmul([tr.translate(-0.7,0.6,0), tr.rotation(np.pi/2), tr.uniformScale(0.4)])
+    store.childs += [wall, door, window1, window2, lamp, ceil, arch, sign]
+
+
+    return store
+
+def createAnimatedSign(pipeline):
+    storeSignPath = os.path.join(spritesDirectory, "Store sign.png")
+
+    #Vertices
+    vertices = [
+    #   positions      
+        -0.5, -0.5, 0.0,
+         0.5, -0.5, 0.0,
+         0.5,  0.5, 0.0,
+        -0.5,  0.5, 0.0]
+
+    # Defining connections among vertices
+    # We have a triangle every 3 indices specified
+    indices = [
+         0, 1, 2,
+         2, 3, 0]
+
+    storeSignTex = bs.Shape(vertices, indices)
+    gpuStoreSignTex = createTextureGPUShape(storeSignTex, pipeline, storeSignPath,
+                                            sWrapMode=GL_CLAMP_TO_EDGE, tWrapMode=GL_CLAMP_TO_EDGE,
+                                            minFilterMode=GL_LINEAR_MIPMAP_NEAREST, maxFilterMode=GL_NEAREST,
+                                            boolMipmap=True)
+
+    #store sign
+    storeSign = sg.SceneGraphNode("storeSign")
+    storeSign.transform = tr.matmul([tr.translate(-0.9, 0.61, 0), tr.rotation(np.pi/2), tr.scale(0.3, 0.12, 1)])
+    storeSign.childs += [gpuStoreSignTex]
+
+    return storeSign

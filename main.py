@@ -121,6 +121,8 @@ if __name__ == "__main__":
     tex_pipeline = es.SimpleTextureTransformShaderProgram()
     # Pipeline para dibujar shapes con texturas animadas (3 fotogramas)
     animated3Tex_pipeline = es.SimpleTextureTransform3FrameAnimationShaderProgram()
+    # Pipeline encargada de dibujar shapes con texturas controladas por el jugador
+    PlayableTex_pipeline = es.SimpleTextureTransform3FrameControllerShaderProgram()
 
     # Setting up the clear screen color
     glClearColor(0.15, 0.15, 0.15, 1.0)
@@ -137,6 +139,9 @@ if __name__ == "__main__":
     store = createStore(tex_pipeline)
     storeSign = createAnimatedSign(animated3Tex_pipeline)
     details = createDetails(pipeline)
+
+    hinata = createHinata(PlayableTex_pipeline)
+    gpuHinata = hinata.childs[0]
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
@@ -155,6 +160,10 @@ if __name__ == "__main__":
     FrameInit = np.array([0.0, 0.34, 0.64])
     FrameFin = np.array([0.33, 0.63, 1])
     actual_sprite=0
+
+    player = Player()
+    player.setModel(hinata)
+    player.setController(controller)
 
 
     # Variables útiles para el procedimiento
@@ -185,8 +194,20 @@ if __name__ == "__main__":
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
-        # Clearing the screen
-        glClear(GL_COLOR_BUFFER_BIT)
+        #PLAYER
+        variable = player.update(delta)
+        texture = player.getTexture_index()
+        #if texture == 0:
+            #gpuHinata.texture =es.textureSimpleSetup(hinataFrontPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                    #GL_NEAREST, GL_NEAREST)
+        #elif texture == 1:
+            #gpuHinata.texture =es.textureSimpleSetup(hinataBackPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                    #GL_NEAREST, GL_NEAREST)
+        #else:
+            #gpuHinata.texture =es.textureSimpleSetup(hinataSidePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                    #GL_NEAREST, GL_NEAREST)
+
+
 
         # Se agregan los movimientos durante escena
         dx += delta*2
@@ -225,8 +246,17 @@ if __name__ == "__main__":
             glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
             glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
             glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), actual_sprite)
-
             sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
+
+            glUseProgram(PlayableTex_pipeline.shaderProgram)
+            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
+            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
+            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), actual_sprite)
+            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
+            sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
+
+
+
         elif controller.what_to_draw == 3:
             glUseProgram(pipeline.shaderProgram)
             sg.drawSceneGraphNode(background, pipeline, "transform")
@@ -236,6 +266,9 @@ if __name__ == "__main__":
         #glUseProgram(tex_pipeline.shaderProgram)
         #sg.drawSceneGraphNode(tex_scene, tex_pipeline, "transform")
 
+        # Clearing the screen
+        glClear(GL_COLOR_BUFFER_BIT)
+
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)
 
@@ -244,5 +277,6 @@ if __name__ == "__main__":
     store.clear()
     storeSign.clear()
     details.clear()
+    hinata.clear()
     
     glfw.terminate()

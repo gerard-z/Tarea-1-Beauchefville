@@ -15,6 +15,23 @@ thisFilePath = os.path.abspath(__file__)
 thisFolderPath = os.path.dirname(thisFilePath)
 spritesDirectory = os.path.join(thisFolderPath,"sprites")
 
+storeSpritesDirectory = os.path.join(spritesDirectory, "store")
+
+doorPath = os.path.join(storeSpritesDirectory, "door.png")
+wallPath = os.path.join(storeSpritesDirectory, "wood.png")
+windowPath = os.path.join(storeSpritesDirectory, "window.png")
+lampPath = os.path.join(storeSpritesDirectory, "lamp.png")
+ceilPath = os.path.join(storeSpritesDirectory, "ceil.png")
+ceilBPath = os.path.join(storeSpritesDirectory, "ceilb.png")
+signPath = os.path.join(storeSpritesDirectory, "sign.png")
+storeSignPath = os.path.join(storeSpritesDirectory, "Store sign.png")
+
+hinataSpritesDirectory = os.path.join(spritesDirectory, "hinata")
+
+hinataFrontPath = os.path.join(hinataSpritesDirectory, "hinataFront.png")
+hinataBackPath = os.path.join(hinataSpritesDirectory, "hinataBack.png")
+hinataSidePath = os.path.join(hinataSpritesDirectory, "hinataSide.png")
+
 def createGPUShape(shape, pipeline):
     # Funcion Conveniente para facilitar la inicializacion de un GPUShape
     gpuShape = es.GPUShape().initBuffers()
@@ -34,6 +51,16 @@ def createTextureGPUShape(shape, pipeline, path,
     if boolMipmap:
         glGenerateMipmap(GL_TEXTURE_2D)
     return gpuShape
+
+def createHinata(pipeline):
+    hinataShape = bs.createTextureQuad(1,1)
+    bs.scaleVertices(hinataShape, 5, np.array([0.2,0.2,0.2]))
+    gpuHinata = createTextureGPUShape(hinataShape, pipeline, hinataFrontPath)
+
+    hinata = sg.SceneGraphNode("hinata")
+    hinata.childs += [gpuHinata]
+
+    return hinata
 
 def createTree(pipeline):
     # se crea un tronco
@@ -221,14 +248,6 @@ def createTextureDoor():
     return bs.Shape(vertices, indices)
 
 def createStore(pipeline):
-    doorPath = os.path.join(spritesDirectory, "door.png")
-    wallPath = os.path.join(spritesDirectory, "wood.png")
-    windowPath = os.path.join(spritesDirectory, "window.png")
-    lampPath = os.path.join(spritesDirectory, "lamp.png")
-    ceilPath = os.path.join(spritesDirectory, "ceil.png")
-    ceilBPath = os.path.join(spritesDirectory, "ceilb.png")
-    signPath = os.path.join(spritesDirectory, "sign.png")
-
     
     doorTex = createTextureDoor()
     gpuDoorTex = createTextureGPUShape(doorTex, pipeline, doorPath, 
@@ -303,7 +322,6 @@ def createStore(pipeline):
     return store
 
 def createAnimatedSign(pipeline):
-    storeSignPath = os.path.join(spritesDirectory, "Store sign.png")
 
     storeSignTex = bs.createSimpleQuad()
     gpuStoreSignTex = createTextureGPUShape(storeSignTex, pipeline, storeSignPath,

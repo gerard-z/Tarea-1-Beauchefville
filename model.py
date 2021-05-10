@@ -98,6 +98,7 @@ class Player:
                 self.setStatus(1)
             else:
                 #colisión con un zombie, se pierde
+                self.setStatus(2)
                 pass
 class npc():
     # Clase que tendrá las características de un npc

@@ -339,6 +339,8 @@ if __name__ == "__main__":
                     ZomHum.model.clear()
                     humanos.remove(ZomHum.model)
                 lNpc.remove(ZomHum)
+            
+        print(player.getStatus())
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)

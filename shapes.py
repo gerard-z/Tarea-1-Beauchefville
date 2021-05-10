@@ -32,6 +32,12 @@ hinataFrontPath = os.path.join(hinataSpritesDirectory, "hinataFront.png")
 hinataBackPath = os.path.join(hinataSpritesDirectory, "hinataBack.png")
 hinataSidePath = os.path.join(hinataSpritesDirectory, "hinataSide.png")
 
+zombieSpritesDirectory = os.path.join(spritesDirectory, "zombie")
+zombiePath = os.path.join(zombieSpritesDirectory, "zombie.png")
+
+humanoSpritesDirectory = os.path.join(spritesDirectory, "humano")
+humanoPath = os.path.join(humanoSpritesDirectory, "humano.png")
+
 def createGPUShape(shape, pipeline):
     # Funcion Conveniente para facilitar la inicializacion de un GPUShape
     gpuShape = es.GPUShape().initBuffers()
@@ -54,13 +60,33 @@ def createTextureGPUShape(shape, pipeline, path,
 
 def createHinata(pipeline):
     hinataShape = bs.createSimpleQuad()
-    #bs.scaleVertices(hinataShape, 5, np.array([0.2,0.2,0.2]))
+    bs.scaleVertices(hinataShape, 3, np.array([0.2,0.2,0.2]))
     gpuHinata = createTextureGPUShape(hinataShape, pipeline, hinataFrontPath)
 
     hinata = sg.SceneGraphNode("hinata")
     hinata.childs += [gpuHinata]
 
     return hinata
+
+def createZombie(pipeline):
+    zombieShape = bs.createSimpleQuad()
+    bs.scaleVertices(zombieShape, 3, np.array([0.2,0.2,0.2]))
+    gpuZombie = createTextureGPUShape(zombieShape, pipeline, zombiePath)
+
+    zombie = sg.SceneGraphNode("zombie")
+    zombie.childs += [gpuZombie]
+
+    return zombie
+
+def createHumano(pipeline):
+    humanoShape = bs.createSimpleQuad()
+    bs.scaleVertices(humanoShape, 3, np.array([0.2,0.2,0.2]))
+    gpuHumano = createTextureGPUShape(humanoShape, pipeline, humanoPath)
+
+    humano = sg.SceneGraphNode("humano")
+    humano.childs += [gpuHumano]
+
+    return humano
 
 def createTree(pipeline):
     # se crea un tronco
@@ -137,9 +163,13 @@ def createStreet(pipeline):
     lineaSegmentada1.transform = tr.translate(0,-0.5,0)
     lineaSegmentada1.childs += [segmento]
 
-    lineaSegmentada2 = sg.SceneGraphNode("linea segmentada")
+    lineaSegmentada2 = sg.SceneGraphNode("linea segmentada2")
     lineaSegmentada2.transform = tr.translate(0,0.5,0)
     lineaSegmentada2.childs += [segmento]
+
+    lineaSegmentada3 = sg.SceneGraphNode("linea segmentada3")
+    lineaSegmentada3.transform = tr.translate(0,1.5,0)
+    lineaSegmentada3.childs += [segmento]
 
     #Linea de tránsito
     lineaTransito1 = sg.SceneGraphNode("Lineatransito1")
@@ -148,7 +178,7 @@ def createStreet(pipeline):
 
     lineaTransito2 = sg.SceneGraphNode("Lineatransito2")
     lineaTransito2.transform = tr.identity()
-    lineaTransito2.childs += [lineaSegmentada1, lineaSegmentada2]
+    lineaTransito2.childs += [lineaSegmentada1, lineaSegmentada2, lineaSegmentada3]
 
 
     #vereda izquierda
@@ -183,13 +213,17 @@ def createBackground(pipeline):
     arbol1.transform = tr.matmul([tr.translate(0, -0.65 , 0),tr.uniformScale(0.3)])
     arbol1.childs += [arbol]
 
-    arbol2 = sg.SceneGraphNode("arbol3")
+    arbol2 = sg.SceneGraphNode("arbol2")
     arbol2.transform = tr.matmul([tr.translate(0, 0 , 0),tr.uniformScale(0.3)])
     arbol2.childs += [arbol]
 
-    arbol3 = sg.SceneGraphNode("arbol5")
+    arbol3 = sg.SceneGraphNode("arbol3")
     arbol3.transform = tr.matmul([tr.translate(0, 0.65, 0),tr.uniformScale(0.3)])
     arbol3.childs += [arbol]
+
+    arbol4 = sg.SceneGraphNode("arbol4")
+    arbol4.transform = tr.matmul([tr.translate(0.75, 1.15, 0),tr.uniformScale(0.3)])
+    arbol4.childs += [arbol]
 
     #Hilera de arboles
     hilera = sg.SceneGraphNode("hilera")
@@ -217,7 +251,7 @@ def createBackground(pipeline):
 
     arboles2 = sg.SceneGraphNode("arboles2")
     arboles2.transform = tr.identity()
-    arboles2.childs += [hileraIzq, hileraDer]
+    arboles2.childs += [hileraIzq, hileraDer, arbol4]
 
     #Background
     background = sg.SceneGraphNode("background")
@@ -317,9 +351,13 @@ def createStore(pipeline):
     store = sg.SceneGraphNode("store")
     store.transform = tr.matmul([tr.translate(-0.7,0.6,0), tr.rotation(np.pi/2), tr.uniformScale(0.4)])
     store.childs += [wall, door, window1, window2, lamp, ceil, arch, sign]
+    
+    Store = sg.SceneGraphNode("Store")
+    Store.transform = tr.identity()
+    Store.childs += [store]
 
 
-    return store
+    return Store
 
 def createAnimatedSign(pipeline):
 
@@ -334,7 +372,11 @@ def createAnimatedSign(pipeline):
     storeSign.transform = tr.matmul([tr.translate(-0.9, 0.61, 0), tr.rotation(np.pi/2), tr.scale(0.3, 0.12, 1)])
     storeSign.childs += [gpuStoreSignTex]
 
-    return storeSign
+    StoreSign = sg.SceneGraphNode("StoreSign")
+    StoreSign.transform = tr.identity()
+    StoreSign.childs += [storeSign]
+
+    return StoreSign
 
 def createDetails(pipeline):
     greenLine = bs.createZicZacLineStrip(5, 0.2, 0, 0.5, 0)
@@ -409,6 +451,10 @@ def createDetails(pipeline):
     Log3.transform = tr.translate(0, 0.6, 0)
     Log3.childs += [log]
 
+    Log4 = sg.SceneGraphNode("Log4")
+    Log4.transform = tr.translate(0.83, 1.07, 0)
+    Log4.childs += [log]
+
     #Log group
     logGroup1 = sg.SceneGraphNode("logGroup")
     logGroup1.transform = tr.translate(-0.67,-0.03,0)
@@ -434,7 +480,7 @@ def createDetails(pipeline):
 
     decoration2 = sg.SceneGraphNode("decoration2")
     decoration2.transform = tr.identity()
-    decoration2.childs += [GrassGroup1, GrassGroup2, logGroup1, logGroup2, scratch2]
+    decoration2.childs += [GrassGroup1, GrassGroup2, logGroup1, logGroup2, scratch2, Log4]
 
     decorations = sg.SceneGraphNode("decorations")
     decorations.transform = tr.identity()

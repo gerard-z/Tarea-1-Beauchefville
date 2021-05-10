@@ -15,10 +15,18 @@ from numpy import random
 import sys, os.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+#sys.argv
+#Z=sys.argv[1]
 
 # We will use 32 bits data, so an integer has 4 bytes
 # 1 byte = 8 bits
 SIZE_IN_BYTES = 4
+
+#Variables entregadas al enunciar el programa
+Z= 2            # Zombies
+H= 3            # Humanos
+T= 5            # Tiempo
+P= 0.5          # Probabilidad
 
 
 # Clase controlador con variables para manejar el estado de ciertos botones
@@ -135,6 +143,8 @@ if __name__ == "__main__":
     
     ######### SHAPES ######
 
+    NPC = sg.SceneGraphNode("npc")
+
     background = createBackground(pipeline)
     store = createStore(tex_pipeline)
     storeSign = createAnimatedSign(animated3Tex_pipeline)
@@ -142,6 +152,10 @@ if __name__ == "__main__":
 
     hinata = createHinata(PlayableTex_pipeline)
     gpuHinata = hinata.childs[0]
+
+    zombies = []
+    humanos = []
+
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
@@ -156,6 +170,9 @@ if __name__ == "__main__":
     decoracion1 = sg.findNode(details, "decoration1")
     decoracion2 = sg.findNode(details, "decoration2")
 
+    Store = sg.findNode(store, "Store")
+    Sign = sg.findNode(storeSign, "StoreSign")
+
     #Distinción de frames en las texturas:
     singInit = np.array([0.0, 0.34, 0.64])
     signFin = np.array([0.33, 0.63, 1])
@@ -164,16 +181,19 @@ if __name__ == "__main__":
     FrameInit = np.array([0, 1/3, 2/3])
     FrameFin = np.array([1/3, 2/3, 1])
 
-    player = Player()
+    player = Player(P)
     player.setModel(hinata)
     player.setController(controller)
+
+    lNpc=[]
+
 
 
     # Variables útiles para el procedimiento
     t0 = glfw.get_time()
     dx = 0
-    desplazamiento = 0
-    dy = 2
+    t3=T
+    dy = 0
     dy2 = 0
     # Application loop
     while not glfw.window_should_close(window):
@@ -182,7 +202,7 @@ if __name__ == "__main__":
         delta = t1 -t0
         t0 = t1
 
-        t3= t1%3
+        t3 += delta
         t4 = t1%1.5
 
 
@@ -202,7 +222,7 @@ if __name__ == "__main__":
         glClear(GL_COLOR_BUFFER_BIT)
 
         #PLAYER
-        variable = player.update(delta)
+        dy -= player.update(delta)
         texture = player.getTexture_index()
         if texture == 0:
             gpuHinata.texture =es.textureSimpleSetup(hinataFrontPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
@@ -214,14 +234,41 @@ if __name__ == "__main__":
             gpuHinata.texture =es.textureSimpleSetup(hinataSidePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
                                                     GL_NEAREST, GL_NEAREST)
 
+        #NPC
+        if t3 > T:
+            nZ = len(zombies)
+            nH = len(humanos)
+            for i in range(Z):
+                rand = random.rand()
+                zombies.append(createZombie(PlayableTex_pipeline))
+                lNpc.append(npc(rand-0.5, rand+ 1.1, 2, P, nZ+i))
+                lNpc[nH + nZ + i].set_model(zombies[nZ + i])
+            NPC.childs += zombies[nZ:]
+            nZ = len(zombies)
+            for i in range(H):
+                p=0
+                rand = random.rand()
+                if random.rand()<P:
+                    p=1
+                humanos.append(createHumano(PlayableTex_pipeline))
+                lNpc.append(npc(rand-0.5,rand + 1.1, p, P, nH+i))
+                lNpc[nH + nZ +i].set_model(humanos[nH + i])
+            NPC.childs += humanos[nH:]
+            t3=0
+            player.Convertirse()
+    
 
+        for ZomHum in lNpc:
+            ZomHum.update(delta)
+            player.collision(ZomHum)
 
+            
+
+        
         # Se agregan los movimientos durante escena
         dx += delta*2
-        desplazamiento = (desplazamiento + delta/4)%4
-        desplazamiento2 = (desplazamiento + 2 + delta/4)%4
-        dy = 2 - desplazamiento
-        dy2 = 2 - desplazamiento2
+        if dy2>-0.6:
+            dy2 = 2 + dy
         hojas.transform = tr.matmul([tr.translate(0, 0.3, 0),tr.shearing(0.2*np.sin(dx), 0, 0, 0, 0, 0)])
         arboles1.transform = tr.translate(0, dy, 0)
         arboles2.transform = tr.translate(0, dy2, 0)
@@ -229,68 +276,63 @@ if __name__ == "__main__":
         lineas2.transform = tr.translate(0, dy2, 0)
         decoracion1.transform = tr.translate(0, dy, 0)
         decoracion2.transform = tr.translate(0, dy2, 0)
+        Store.transform = tr.translate(0, dy2, 0)
+        Sign.transform = tr.translate(0, dy2, 0)
 
         #Animación:
-        if t3<1:
-            actual_sprite=0
-        elif t3<2:
-            actual_sprite=1
-        else:
-            actual_sprite=2
-        
         if t4<0.5:
             if texture !=3:
-                hinataSprite=0
+                time=0
             else:
-                hinataSprite=2
+                time=2
         elif t4<1:
-            hinataSprite=1
+            time=1
         else:
             if texture !=3:
-                hinataSprite=2
+                time=2
             else:
-                hinataSprite=0
+                time=0
 
-        
+        # Se dibuja el grafo de escena.
+        if player.getStatus() !=2
+        glUseProgram(pipeline.shaderProgram)
+        sg.drawSceneGraphNode(background, pipeline, "transform")
+        sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
 
+        glUseProgram(tex_pipeline.shaderProgram)
+        sg.drawSceneGraphNode(store, tex_pipeline, "transform")
 
-        # Se dibuja el grafo de escena que se selecciona. (Sirve para probar que tal estaban los dibujos)
-        if controller.what_to_draw == 1:
-            glUseProgram(pipeline.shaderProgram)
-            sg.drawSceneGraphNode(background, pipeline, "transform")
-            sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
-            
-        elif controller.what_to_draw == 2:
-            glUseProgram(tex_pipeline.shaderProgram)
-            sg.drawSceneGraphNode(store, tex_pipeline, "transform")
+        glUseProgram(animated3Tex_pipeline.shaderProgram)
+        glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
+        glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
+        glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
+        sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
 
-            glUseProgram(animated3Tex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
-            glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), actual_sprite)
-            sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
-
-            glUseProgram(PlayableTex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
-            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
-            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), hinataSprite)
-            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
-            sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
-
-
-
-        elif controller.what_to_draw == 3:
-            glUseProgram(pipeline.shaderProgram)
-            sg.drawSceneGraphNode(background, pipeline, "transform")
-            #sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
-
-        # Se dibuja el grafo de escena con texturas
-        #glUseProgram(tex_pipeline.shaderProgram)
-        #sg.drawSceneGraphNode(tex_scene, tex_pipeline, "transform")
+        glUseProgram(PlayableTex_pipeline.shaderProgram)
+        glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
+        glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
+        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), time)
+        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
+        sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
+        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), 0)
+        sg.drawSceneGraphNode(NPC, PlayableTex_pipeline, "transform")
 
         player.setTexture_index_default()
+        if dy2<=-0.6 and player.pos[0] <0-0.3 and player.pos[1] >-0.3:
+            print ("Misión exitosa")
 
-
+        for ZomHum in lNpc:
+            if ZomHum.getPos()<-1.3:
+                index = ZomHum.getIndex()
+                if ZomHum.getStatus() == 2:
+                    NPC.childs.remove(ZomHum.model)
+                    ZomHum.model.clear()
+                    zombies.remove(ZomHum.model)
+                else:
+                    NPC.childs.remove(ZomHum.model)
+                    ZomHum.model.clear()
+                    humanos.remove(ZomHum.model)
+                lNpc.remove(ZomHum)
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)
@@ -301,5 +343,6 @@ if __name__ == "__main__":
     storeSign.clear()
     details.clear()
     hinata.clear()
+    NPC.clear()
     
     glfw.terminate()

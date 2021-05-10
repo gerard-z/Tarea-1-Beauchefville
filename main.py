@@ -294,28 +294,34 @@ if __name__ == "__main__":
                 time=0
 
         # Se dibuja el grafo de escena.
-        if player.getStatus() !=2
-        glUseProgram(pipeline.shaderProgram)
-        sg.drawSceneGraphNode(background, pipeline, "transform")
-        sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
+        if player.getStatus() !=2:
+            glUseProgram(pipeline.shaderProgram)
+            sg.drawSceneGraphNode(background, pipeline, "transform")
+            sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
 
-        glUseProgram(tex_pipeline.shaderProgram)
-        sg.drawSceneGraphNode(store, tex_pipeline, "transform")
+            glUseProgram(tex_pipeline.shaderProgram)
+            sg.drawSceneGraphNode(store, tex_pipeline, "transform")
 
-        glUseProgram(animated3Tex_pipeline.shaderProgram)
-        glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
-        glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
-        glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
-        sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
+            glUseProgram(animated3Tex_pipeline.shaderProgram)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
+            glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
+            sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
 
-        glUseProgram(PlayableTex_pipeline.shaderProgram)
-        glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
-        glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
-        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), time)
-        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
-        sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
-        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), 0)
-        sg.drawSceneGraphNode(NPC, PlayableTex_pipeline, "transform")
+            glUseProgram(PlayableTex_pipeline.shaderProgram)
+            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
+            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
+            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), time)
+            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
+            sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
+            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), 0)
+            sg.drawSceneGraphNode(NPC, PlayableTex_pipeline, "transform")
+        else:
+            glUseProgram(animated3Tex_pipeline.shaderProgram)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
+            glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
+            sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
 
         player.setTexture_index_default()
         if dy2<=-0.6 and player.pos[0] <0-0.3 and player.pos[1] >-0.3:

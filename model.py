@@ -92,11 +92,13 @@ class Player:
         if (self.hitbox+npc.hitbox)**2 > ((self.pos[0]- npc.pos[0])**2 + (self.pos[1]-npc.pos[1])**2):
             if npc.getStatus() == 0:
                 #colisión con un humano limpio, nada
+                pass
             elif npc.getStatus() == 1:
                 #colisión con un humano contagiado, ahora estamos contagiado
                 self.setStatus(1)
             else:
                 #colisión con un zombie, se pierde
+                pass
 class npc():
     # Clase que tendrá las características de un npc
     def __init__(self, posx, posy, status, p, index):

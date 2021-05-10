@@ -24,6 +24,9 @@ class Player:
         # Se le asocia el controlador
         self.controller = controller
     
+    def setTexture_index_default(self):
+        self.texture_index = 0
+    
     def getTexture_index(self):
         return self.texture_index
     
@@ -32,7 +35,7 @@ class Player:
         dx=0
         #Si se presiona W
         if self.controller.is_w_pressed:
-            if self.pos[0]<=-0.5:
+            if self.pos[1]<=0:
                 self.pos[1] += delta
             else:
                 dx = delta

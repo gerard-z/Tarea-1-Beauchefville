@@ -157,9 +157,12 @@ if __name__ == "__main__":
     decoracion2 = sg.findNode(details, "decoration2")
 
     #Distinción de frames en las texturas:
-    FrameInit = np.array([0.0, 0.34, 0.64])
-    FrameFin = np.array([0.33, 0.63, 1])
+    singInit = np.array([0.0, 0.34, 0.64])
+    signFin = np.array([0.33, 0.63, 1])
     actual_sprite=0
+
+    FrameInit = np.array([0, 1/3, 2/3])
+    FrameFin = np.array([1/3, 2/3, 1])
 
     player = Player()
     player.setModel(hinata)
@@ -179,7 +182,8 @@ if __name__ == "__main__":
         delta = t1 -t0
         t0 = t1
 
-        t3= glfw.get_time()%3
+        t3= t1%3
+        t4 = t1%1.5
 
 
         # Measuring performance
@@ -194,18 +198,21 @@ if __name__ == "__main__":
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
+        # Clearing the screen
+        glClear(GL_COLOR_BUFFER_BIT)
+
         #PLAYER
         variable = player.update(delta)
         texture = player.getTexture_index()
-        #if texture == 0:
-            #gpuHinata.texture =es.textureSimpleSetup(hinataFrontPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
-                                                    #GL_NEAREST, GL_NEAREST)
-        #elif texture == 1:
-            #gpuHinata.texture =es.textureSimpleSetup(hinataBackPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
-                                                    #GL_NEAREST, GL_NEAREST)
-        #else:
-            #gpuHinata.texture =es.textureSimpleSetup(hinataSidePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
-                                                    #GL_NEAREST, GL_NEAREST)
+        if texture == 0:
+            gpuHinata.texture =es.textureSimpleSetup(hinataFrontPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                    GL_NEAREST, GL_NEAREST)
+        elif texture == 1:
+            gpuHinata.texture =es.textureSimpleSetup(hinataBackPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                    GL_NEAREST, GL_NEAREST)
+        else:
+            gpuHinata.texture =es.textureSimpleSetup(hinataSidePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                    GL_NEAREST, GL_NEAREST)
 
 
 
@@ -224,12 +231,27 @@ if __name__ == "__main__":
         decoracion2.transform = tr.translate(0, dy2, 0)
 
         #Animación:
-        if t3>=0 and t3<1:
+        if t3<1:
             actual_sprite=0
-        elif t3>=1 and t3<2:
+        elif t3<2:
             actual_sprite=1
         else:
             actual_sprite=2
+        
+        if t4<0.5:
+            if texture !=3:
+                hinataSprite=0
+            else:
+                hinataSprite=2
+        elif t4<1:
+            hinataSprite=1
+        else:
+            if texture !=3:
+                hinataSprite=2
+            else:
+                hinataSprite=0
+
+        
 
 
         # Se dibuja el grafo de escena que se selecciona. (Sirve para probar que tal estaban los dibujos)
@@ -243,15 +265,15 @@ if __name__ == "__main__":
             sg.drawSceneGraphNode(store, tex_pipeline, "transform")
 
             glUseProgram(animated3Tex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
+            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
             glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), actual_sprite)
             sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
 
             glUseProgram(PlayableTex_pipeline.shaderProgram)
             glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
             glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
-            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), actual_sprite)
+            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), hinataSprite)
             glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
             sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
 
@@ -266,8 +288,9 @@ if __name__ == "__main__":
         #glUseProgram(tex_pipeline.shaderProgram)
         #sg.drawSceneGraphNode(tex_scene, tex_pipeline, "transform")
 
-        # Clearing the screen
-        glClear(GL_COLOR_BUFFER_BIT)
+        player.setTexture_index_default()
+
+
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)

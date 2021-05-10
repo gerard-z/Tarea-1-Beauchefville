@@ -53,8 +53,8 @@ def createTextureGPUShape(shape, pipeline, path,
     return gpuShape
 
 def createHinata(pipeline):
-    hinataShape = bs.createTextureQuad(1,1)
-    bs.scaleVertices(hinataShape, 5, np.array([0.2,0.2,0.2]))
+    hinataShape = bs.createSimpleQuad()
+    #bs.scaleVertices(hinataShape, 5, np.array([0.2,0.2,0.2]))
     gpuHinata = createTextureGPUShape(hinataShape, pipeline, hinataFrontPath)
 
     hinata = sg.SceneGraphNode("hinata")

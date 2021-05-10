@@ -307,6 +307,10 @@ class SimpleTextureTransform3FrameControllerShaderProgram:
                 else{
                     outTexCoords = vec2(spritesInit[index], 1);
                 }
+
+                if(move==3){
+                    outTexCoords = vec2(abs(outTexCoords.x-1), outTexCoords.y);
+                }
             }
             """
             

@@ -106,3 +106,58 @@ def drawSceneGraphNode(node, pipeline, transformName, mode=GL_TRIANGLES, parentT
         for child in node.childs:
             drawSceneGraphNode(child, pipeline, transformName, mode, newTransform)
 
+class SceneGraphNodeMultiPipeline:
+    """
+    A simple class to handle a scene graph
+    Each node represents a group of objects
+    Each leaf represents a basic figure (GPUShape)
+    To identify each node properly, it MUST have a unique name
+    Now a some node can have diferent a list with diferent Pipeline in their childs
+    But leaf only can have one pipeline
+    """
+    def __init__(self, name, listPipeline, status = "default"):
+        self.name = name
+        self.transform = tr.identity()
+        self.childs = []
+        self.pipeline = listPipeline
+        self.status = status
+
+    def clear(self):
+        """Freeing GPU memory"""
+
+        for child in self.childs:
+            child.clear()
+    def setStatus(self,s):
+        # Actualiza el estado
+        self.status = s
+
+def drawSceneGraphNodeMultiPipeline(node, listPipeline, transformName, mode=GL_TRIANGLES, parentTransform=tr.identity()):
+    assert(isinstance(node, SceneGraphNodeMultiPipeline))
+
+    # Composing the transformations through this path
+    newTransform = np.matmul(parentTransform, node.transform)
+
+
+    # If the child node is a leaf, it should be a GPUShape.
+    # Hence, it can be drawn with drawCall
+    if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
+        leaf = node.childs[0]
+        pipeline = node.pipeline[0]
+        if node.status=="default":
+            glUseProgram(pipeline.shaderProgram)
+        else:
+            glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "status"), node.status)
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
+        pipeline.drawCall(leaf, mode)
+
+    # If the child node is not a leaf, it MUST be a SceneGraphNode,
+    # so this draw function is called recursively
+
+    else:
+        for child in node.childs:
+            LP= []
+            for pipeline in node.pipeline:
+                if pipeline in child.pipeline:
+                    LP.append(pipeline)
+            drawSceneGraphNodeMultiPipeline(child, LP, transformName, mode, newTransform)
+

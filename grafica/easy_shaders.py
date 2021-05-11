@@ -289,6 +289,7 @@ class SimpleTextureTransform3FrameControllerShaderProgram:
             in vec3 position;
 
             out vec2 outTexCoords;
+            out int paint;
 
             void main()
             {
@@ -322,10 +323,16 @@ class SimpleTextureTransform3FrameControllerShaderProgram:
             out vec4 outColor;
 
             uniform sampler2D samplerTex;
+            uniform int gafas;
+            uniform int status;
 
             void main()
             {
-                outColor = texture(samplerTex, outTexCoords);
+                vec4 text = texture(samplerTex, outTexCoords);
+                if (gafas>0 && status==1){
+                    text.g=1;
+                }
+                outColor = vec4(text.r, text.g, text.b, text.a);
             }
             """
 

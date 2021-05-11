@@ -2,11 +2,9 @@
 import glfw
 import numpy as np
 import grafica.transformations as tr
+import grafica.easy_shaders as es
+from shapes import *
 from numpy import random
-
-#### IDEA1: Agregar la "vacuna" con una textura y alguna forma de estrella que cambia dinámicamente sus vertices
-
-### Sign : 0.2 - 0.5 - 1
 
 class Player:
     #Clase que tendrá las características para el jugador
@@ -18,7 +16,7 @@ class Player:
         self.texture_index = 0
         self.status = 0 # Estado, explicado en la clase npc
         self.prob = p #Probabilidad de volverse zombie, una vez infectada
-        self.hitbox = 0.05
+        self.hitbox = 0.06
     
     def setModel(self, node):
         # Se indexa a un nodo
@@ -45,6 +43,7 @@ class Player:
         return self.texture_index
     
     def Convertirse(self):
+        # Calcula la probabilidad de convertirse en zombie si está contagiado
         if self.getStatus() == 1:
             n=random.rand()
             if n < self.prob:
@@ -96,27 +95,23 @@ class Player:
             elif npc.getStatus() == 1:
                 #colisión con un humano contagiado, ahora estamos contagiado
                 self.setStatus(1)
+                self.model.setStatus(1)
             else:
                 #colisión con un zombie, se pierde
                 self.setStatus(2)
                 pass
 class npc():
     # Clase que tendrá las características de un npc
-    def __init__(self, posx, posy, status, p, index):
+    def __init__(self, posx, posy, status, p):
         self.pos = [posx, posy]
         self.model = None
         self.status = status        # El estado determinará si es humano (0), contagiado (1) y zombie (2)
-        self.hitbox = 0.05
+        self.hitbox = 0.06
         self.prob = p               # La probabilidad de volverse zombie una vez contagiado
-        self.index = index          # El índice donde está guardado la escena en la lista de los elementos
 
     def getPos(self):
         # Entrega la posición y del npc
         return self.pos[1]
-
-    def getIndex(self):
-        # Entrega el índice en donde está guardado el modelo
-        return self.index
     
     def getStatus(self):
         # Entrega el estado del npc
@@ -125,6 +120,17 @@ class npc():
     def setStatus(self, s):
         # Actualiza el estado del npc
         self.status = s
+
+    def Convertirse(self):
+        # Calcula probabilidad de convertirse un zombie si está contagiado
+        if self.getStatus() == 1:
+            n=random.rand()
+            if n < self.prob:
+                self.setStatus(2)
+                self.model.childs[0].texture = es.textureSimpleSetup(zombiePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                                GL_NEAREST, GL_NEAREST)
+                return True
+        return False
     
     def set_model(self, new_model):
         self.model = new_model
@@ -143,3 +149,42 @@ class npc():
 
         # Se posiciona el nodo referenciado
         self.model.transform = tr.translate(self.pos[0], self.pos[1], 0)
+
+    def collision(self, Lista):
+        # Funcion para detectar el contacto entre npc y el resto de npcs.
+        if len(Lista) == 0:
+            return False
+        
+        #Recibe una lista con los npc que se compara
+        status = self.getStatus()
+        npclist = []
+        for npc in Lista:
+            dx = (self.pos[0] - npc.pos[0])**2
+            dy = (self.pos[1] - npc.pos[1])**2
+            Distancia = (self.hitbox + npc.hitbox)**2
+            # Se analiza cada caso en donde cuál es el estado original del npc y de los que se compara
+            if Distancia > dx + dy:
+                npcStatus = npc.getStatus()
+                if status == 0:
+                    self.setStatus(npcStatus)
+                elif status == 1:
+                    if npcStatus ==2:
+                        self.setStatus(npcStatus)
+                    else:
+                        npc.setStatus(status)
+                else:
+                    if npcStatus != 2:
+                        npc.setStatus(status)
+                        npc.model.childs[0].texture = es.textureSimpleSetup(zombiePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                                GL_NEAREST, GL_NEAREST)
+                        npclist.append(npc)
+        statusv2 = self.getStatus()
+        self.model.setStatus(statusv2)
+
+        if status <2 and statusv2 == 2:
+            self.model.childs[0].texture = es.textureSimpleSetup(zombiePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                                GL_NEAREST, GL_NEAREST)
+            return True
+        elif len(npclist)!=0:
+            return npclist
+        return False

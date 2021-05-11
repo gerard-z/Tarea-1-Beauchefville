@@ -15,6 +15,13 @@ from numpy import random
 import sys, os.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+#Directory file
+thisFilePath = os.path.abspath(__file__)
+thisFolderPath = os.path.dirname(thisFilePath)
+spritesDirectory = os.path.join(thisFolderPath,"sprites")
+
+textPath = os.path.join(spritesDirectory, "derrota.png")
+
 #sys.argv
 #Z=sys.argv[1]
 
@@ -23,10 +30,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SIZE_IN_BYTES = 4
 
 #Variables entregadas al enunciar el programa
-Z= 2            # Zombies
-H= 3            # Humanos
-T= 5            # Tiempo
-P= 0.5          # Probabilidad
+z, h, t, p = sys.argv[1:5]
+
+
+Z = int(z)
+H = int(h)
+T = float(t)
+P = float(p)
 
 
 # Clase controlador con variables para manejar el estado de ciertos botones
@@ -143,7 +153,7 @@ if __name__ == "__main__":
     
     ######### SHAPES ######
 
-    NPC = sg.SceneGraphNode("npc")
+    NPC = sg.SceneGraphNodeMultiPipeline("npc", [PlayableTex_pipeline])
 
     background = createBackground(pipeline)
     store = createStore(tex_pipeline)
@@ -153,9 +163,27 @@ if __name__ == "__main__":
     hinata = createHinata(PlayableTex_pipeline)
     gpuHinata = hinata.childs[0]
 
+    gpuYouWin = YouWingpu(pipeline)
+
+    cuadroWin = bs.Shape(VerticesYouwin(0), indicesYouWin())
+    gpuCuadroWin = createGPUShapeStream(cuadroWin, pipeline)
+
+
     zombies = []
     humanos = []
 
+    ######## SHAPES WITH MORE PIPELINES ARE CREATE HERE ########
+    # derrota
+    gpuCuadradoNegro = createGPUShape(bs.createRainbowQuad(),pipeline)
+    cuadroNegro = sg.SceneGraphNodeMultiPipeline("cuadroNegro", [pipeline])
+    cuadroNegro.childs += [gpuCuadradoNegro]
+
+    gpuText = createTextureGPUShape(bs.createSimpleQuad(), animated3Tex_pipeline, textPath)
+    Text = sg.SceneGraphNodeMultiPipeline("derrotaText", [animated3Tex_pipeline])
+    Text.childs += [gpuText]
+
+    derrota = sg.SceneGraphNodeMultiPipeline("derrota", [pipeline, animated3Tex_pipeline])
+    derrota.childs += [cuadroNegro, Text]
 
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
@@ -193,8 +221,11 @@ if __name__ == "__main__":
     t0 = glfw.get_time()
     dx = 0
     t3=T
+    t5=0
     dy = 0
     dy2 = 0
+    derrotaBool = False
+    victoriaBool = False
     # Application loop
     while not glfw.window_should_close(window):
         # Variables del tiempo
@@ -204,6 +235,7 @@ if __name__ == "__main__":
 
         t3 += delta
         t4 = t1%1.5
+        t5 += delta
 
 
         # Measuring performance
@@ -212,55 +244,75 @@ if __name__ == "__main__":
         # Using GLFW to check for input events
         glfw.poll_events()
 
-        # Filling or not the shapes depending on the controller state
+        # Filling or not the shapes depending on the controller state,
+        # ahora activa las gafas detectoras
         if (controller.fillPolygon):
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+            #glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+            gafas = 0
         else:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            gafas = 1
 
         # Clearing the screen
         glClear(GL_COLOR_BUFFER_BIT)
 
         #PLAYER
-        dy -= player.update(delta)
-        texture = player.getTexture_index()
-        if texture == 0:
-            gpuHinata.texture =es.textureSimpleSetup(hinataFrontPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
-                                                    GL_NEAREST, GL_NEAREST)
-        elif texture == 1:
-            gpuHinata.texture =es.textureSimpleSetup(hinataBackPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
-                                                    GL_NEAREST, GL_NEAREST)
-        else:
-            gpuHinata.texture =es.textureSimpleSetup(hinataSidePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
-                                                    GL_NEAREST, GL_NEAREST)
+        if not derrotaBool and not victoriaBool:
+            dy -= player.update(delta)
+            texture = player.getTexture_index()
+            if texture == 0:
+                gpuHinata.texture =es.textureSimpleSetup(hinataFrontPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                        GL_NEAREST, GL_NEAREST)
+            elif texture == 1:
+                gpuHinata.texture =es.textureSimpleSetup(hinataBackPath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                        GL_NEAREST, GL_NEAREST)
+            else:
+                gpuHinata.texture =es.textureSimpleSetup(hinataSidePath, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE,
+                                                        GL_NEAREST, GL_NEAREST)
 
-        #NPC
-        if t3 > T:
-            nZ = len(zombies)
-            nH = len(humanos)
-            for i in range(Z):
-                rand = random.rand()
-                zombies.append(createZombie(PlayableTex_pipeline))
-                lNpc.append(npc(rand-0.5, rand+ 1.1, 2, P, nZ+i))
-                lNpc[nH + nZ + i].set_model(zombies[nZ + i])
-            NPC.childs += zombies[nZ:]
-            nZ = len(zombies)
-            for i in range(H):
-                p=0
-                rand = random.rand()
-                if random.rand()<P:
-                    p=1
-                humanos.append(createHumano(PlayableTex_pipeline))
-                lNpc.append(npc(rand-0.5,rand + 1.1, p, P, nH+i))
-                lNpc[nH + nZ +i].set_model(humanos[nH + i])
-            NPC.childs += humanos[nH:]
-            t3=0
-            player.Convertirse()
+            #NPC
+            if t3 > T:
+                for ZomHum in lNpc:
+                    Convertido = ZomHum.Convertirse()
+                    if Convertido:
+                        zombies.append(ZomHum.model)
+                        humanos.remove(ZomHum.model)
+                nZ = len(zombies)
+                nH = len(humanos)
+                for i in range(Z):
+                    rand = random.rand()
+                    zombies.append(createZombie(PlayableTex_pipeline))
+                    lNpc.append(npc(rand-0.5, rand+ 1.1, 2, P))
+                    lNpc[nH + nZ + i].set_model(zombies[nZ + i])
+                NPC.childs += zombies[nZ:]
+                nZ = len(zombies)
+                for i in range(H):
+                    p=0
+                    rand = random.rand()
+                    if random.rand()<P:
+                        p=1
+                    lNpc.append(npc(rand-0.5,rand + 1.1, p, P))
+                    humanos.append(createHumano(PlayableTex_pipeline, lNpc[nH + nZ +i].getStatus()))
+                    lNpc[nH + nZ +i].set_model(humanos[nH + i])
+                NPC.childs += humanos[nH:]
+                t3=0
+                player.Convertirse()
+                
     
-
-        for ZomHum in lNpc:
-            ZomHum.update(delta)
-            player.collision(ZomHum)
+            Compare = []
+            for ZomHum in lNpc:
+                ZomHum.update(delta)
+                Convertido = ZomHum.collision(Compare)
+                Compare.append(ZomHum)
+                player.collision(ZomHum)
+                if type(Convertido)==list:
+                    for z in Convertido:
+                        zombies.append(z.model)
+                        humanos.remove(z.model)
+                elif Convertido:
+                    zombies.append(ZomHum.model)
+                    humanos.remove(ZomHum.model)
+            
 
             
 
@@ -294,53 +346,61 @@ if __name__ == "__main__":
                 time=0
 
         # Se dibuja el grafo de escena.
-        if player.getStatus() !=2:
-            glUseProgram(pipeline.shaderProgram)
-            sg.drawSceneGraphNode(background, pipeline, "transform")
-            sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
+        glUseProgram(pipeline.shaderProgram)
+        sg.drawSceneGraphNode(background, pipeline, "transform")
+        sg.drawSceneGraphNode(details, pipeline, "transform", GL_LINE_STRIP)
 
-            glUseProgram(tex_pipeline.shaderProgram)
-            sg.drawSceneGraphNode(store, tex_pipeline, "transform")
+        glUseProgram(tex_pipeline.shaderProgram)
+        sg.drawSceneGraphNode(store, tex_pipeline, "transform")
 
-            glUseProgram(animated3Tex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
-            glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
-            sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
+        glUseProgram(animated3Tex_pipeline.shaderProgram)
+        glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
+        glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
+        glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
+        sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transdform")
 
-            glUseProgram(PlayableTex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
-            glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
-            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), time)
+        glUseProgram(PlayableTex_pipeline.shaderProgram)
+        glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
+        glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
+        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "index"), time)
+        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), 0)
+        glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "gafas"), gafas)
+        sg.drawSceneGraphNodeMultiPipeline(NPC, [PlayableTex_pipeline], "transform")
+
+        if not derrotaBool and player.getStatus() !=2:
             glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), texture)
-            sg.drawSceneGraphNode(hinata, PlayableTex_pipeline, "transform")
-            glUniform1i(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "move"), 0)
-            sg.drawSceneGraphNode(NPC, PlayableTex_pipeline, "transform")
+            sg.drawSceneGraphNodeMultiPipeline(hinata, [PlayableTex_pipeline], "transform")
         else:
-            glUseProgram(animated3Tex_pipeline.shaderProgram)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, singInit)
-            glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, signFin)
-            glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
-            sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
+            if not derrotaBool: del player
+            derrotaBool = True
+            sg.drawSceneGraphNodeMultiPipeline(derrota, [pipeline, animated3Tex_pipeline], "transform")
 
-        player.setTexture_index_default()
-        if dy2<=-0.6 and player.pos[0] <0-0.3 and player.pos[1] >-0.3:
-            print ("Misión exitosa")
+        if victoriaBool:
+            glUseProgram(pipeline.shaderProgram)
+            glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "transform"), 1, GL_TRUE, tr.identity())
+            vertexData = np.array(VerticesYouwin(t5), dtype = np.float32)
+            glBindBuffer(GL_ARRAY_BUFFER, gpuCuadroWin.vbo)
+            glBufferData(GL_ARRAY_BUFFER, len(vertexData) * SIZE_IN_BYTES, vertexData, GL_STREAM_DRAW)
+            pipeline.drawCall(gpuCuadroWin, GL_TRIANGLES)
+            pipeline.drawCall(gpuYouWin, GL_TRIANGLES)
 
-        for ZomHum in lNpc:
-            if ZomHum.getPos()<-1.3:
-                index = ZomHum.getIndex()
-                if ZomHum.getStatus() == 2:
-                    NPC.childs.remove(ZomHum.model)
-                    ZomHum.model.clear()
-                    zombies.remove(ZomHum.model)
-                else:
-                    NPC.childs.remove(ZomHum.model)
-                    ZomHum.model.clear()
-                    humanos.remove(ZomHum.model)
-                lNpc.remove(ZomHum)
-            
-        print(player.getStatus())
+
+        if not derrotaBool and dy2<=-0.6 and player.pos[0] <0-0.3 and player.pos[1] >-0.3:
+            victoriaBool = True
+        
+        if not derrotaBool:
+            player.setTexture_index_default()
+            for ZomHum in lNpc:
+                if ZomHum.getPos()<-1.3:
+                    if ZomHum.getStatus() == 2:
+                        zombies.remove(ZomHum.model)
+                        ZomHum.model.clear()
+                        NPC.childs.remove(ZomHum.model)
+                    else:
+                        humanos.remove(ZomHum.model)
+                        ZomHum.model.clear()
+                        NPC.childs.remove(ZomHum.model)
+                    lNpc.remove(ZomHum)
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)

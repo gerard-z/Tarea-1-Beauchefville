@@ -45,6 +45,13 @@ def createGPUShape(shape, pipeline):
     gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STATIC_DRAW)
     return gpuShape
 
+def createGPUShapeStream(shape, pipeline):
+    # Función conveniente para facilitar la inicialización de un GPUShape con vértices dinámicos
+    gpuShape = es.GPUShape().initBuffers()
+    pipeline.setupVAO(gpuShape)
+    gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STREAM_DRAW)
+    return gpuShape
+
 def createTextureGPUShape(shape, pipeline, path,
                         sWrapMode=GL_CLAMP_TO_EDGE, tWrapMode=GL_CLAMP_TO_EDGE, minFilterMode=GL_NEAREST, maxFilterMode=GL_NEAREST,
                         boolMipmap=False):
@@ -63,7 +70,7 @@ def createHinata(pipeline):
     bs.scaleVertices(hinataShape, 3, np.array([0.2,0.2,0.2]))
     gpuHinata = createTextureGPUShape(hinataShape, pipeline, hinataFrontPath)
 
-    hinata = sg.SceneGraphNode("hinata")
+    hinata = sg.SceneGraphNodeMultiPipeline("hinata", [pipeline], 0)
     hinata.childs += [gpuHinata]
 
     return hinata
@@ -73,17 +80,17 @@ def createZombie(pipeline):
     bs.scaleVertices(zombieShape, 3, np.array([0.2,0.2,0.2]))
     gpuZombie = createTextureGPUShape(zombieShape, pipeline, zombiePath)
 
-    zombie = sg.SceneGraphNode("zombie")
+    zombie = sg.SceneGraphNodeMultiPipeline("zombie", [pipeline], 2)
     zombie.childs += [gpuZombie]
 
     return zombie
 
-def createHumano(pipeline):
+def createHumano(pipeline, status):
     humanoShape = bs.createSimpleQuad()
     bs.scaleVertices(humanoShape, 3, np.array([0.2,0.2,0.2]))
     gpuHumano = createTextureGPUShape(humanoShape, pipeline, humanoPath)
 
-    humano = sg.SceneGraphNode("humano")
+    humano = sg.SceneGraphNodeMultiPipeline("humano", [pipeline], status)
     humano.childs += [gpuHumano]
 
     return humano
@@ -488,3 +495,173 @@ def createDetails(pipeline):
 
 
     return decorations
+
+def YouWingpu(pipeline):
+    """ pipeline - > gpuShape 
+    Crea la figura que corresponderá a las letras YOU WIN"""
+    # Primero escribimos los vértices fijos de las letras y el cuado borde
+    # Y amarillo
+    (r, g, b) = (0, 1, 1)
+    Yv = [-0.5, 0.35, 0, r, g, b,
+        -0.45, 0.4, 0, r, g, b,
+        -0.4, 0.3, 0, r, g, b,
+        -0.45, 0.1, 0, r, g, b,
+        -0.35, 0.1, 0, r, g, b,
+        -0.35, 0.4, 0, r, g, b,
+        -0.3, 0.35, 0, r, g, b]
+
+    Yi = [0, 1, 2,
+        3, 4, 2,
+        5, 6, 2]
+
+    # 7 vertices para Y, índice hata el 6
+    # Letra O
+    (r, g, b) = (0, 1, 0)
+    Ov = [-0.2, 0.4, 0, r, g, b,
+        -0.2, 0.1, 0, r, g, b,
+        -0.1, 0.1, 0, r, g, b,
+        -0.1, 0.4, 0, r, g, b,
+        -0.1, 0.3, 0, r, g, b,
+        0.1, 0.4, 0, r, g, b,
+        0.1, 0.3, 0, r, g, b,
+        0, 0.3, 0, r, g, b,
+        0.1, 0.1, 0, r, g, b,
+        0, 0.1, 0, r, g, b,
+        0, 0.2, 0, r, g, b,
+        -0.1, 0.2, 0, r, g, b]
+
+
+    Oi = [7, 8, 9,
+        7, 9, 10,
+        10, 11, 12,
+        11, 12, 13,
+        13, 14, 15,
+        14, 15, 16,
+        16, 17, 18,
+        16, 18, 9]
+    # 12 vértices para O, 19 vértices en total, índice máximo 18
+    # Letra U
+    (r, g, b) = (0, 0, 1)
+    Uv = [0.2, 0.4, 0, r, g, b,
+        0.3, 0.4, 0, r, g, b,
+        0.2, 0.1, 0, r, g, b,
+        0.3, 0.1, 0, r, g, b,
+        0.3, 0.2, 0, r, g, b,
+        0.5, 0.1, 0, r, g, b,
+        0.5, 0.2, 0, r, g, b,
+        0.4, 0.2, 0, r, g, b,
+        0.5, 0.4, 0, r, g, b,
+        0.4, 0.4, 0, r, g, b]
+
+    Ui = [19, 20, 21,
+        20, 21, 22,
+        22, 23, 24,
+        23, 24, 25,
+        25, 26, 27,
+        26, 27, 28]
+    # 10 vértices para U, 29 vértices en total, índice máximo 28
+    # Letra W
+    (r, g, b) = (1, 0, 0)
+    Wv = [-0.5, -0.05, 0, r, g, b,
+        -0.4, 0, 0, r, g, b,
+        -0.3, -0.3, 0, r, g, b,
+        -0.35, -0.25, 0, r, g, b,
+        -0.35, -0.3, 0, r, g, b,
+        -0.25, -0.25, 0, r, g, b,
+        -0.25, -0.3, 0, r, g, b,
+        -0.35, -0.3, 0, r, g, b,
+        -0.25, -0.3, 0, r, g, b,
+        -0.3, -0.1, 0, r, g, b,
+        -0.2, 0, 0, r, g, b,
+        -0.1, -0.05, 0, r, g, b]
+
+    Wi = [29, 30, 31,
+    32, 33, 34,
+    33, 34, 35,
+    36, 37, 38,
+    39, 40, 31]
+    #12 vértices para W, 41 vértices en total. Índice máximo es 40
+    #Letra I
+    (r,g,b) = (0, 1, 1)
+    Iv = [0.05, -0.15, 0, r, g, b,
+        0, -0.3, 0, r, g, b,
+        0.1, -0.3, 0, r, g, b]
+    
+    Ii = [41, 42, 43]
+    #3 vértices para I, 44 vértices en total. Índice máximo es 43
+    # Letra N
+    (r,g,b) = (1, 1, 0)
+    Nv = [0.2, -0.3, 0, r, g, b,
+        0.2, 0, 0, r, g, b,
+        0.3, -0.3, 0, r, g, b,
+        0.3, 0, 0, r, g, b,
+        0.3, -0.1, 0, r, g, b,
+        0.4, -0.3, 0, r, g, b,
+        0.4, -0.2, 0, r, g, b,
+        0.5, -0.3, 0, r, g, b,
+        0.4, 0, 0, r, g, b,
+        0.5, 0, 0, r, g, b]
+
+    Ni = [44, 45, 46,
+    45, 46, 47,
+    47, 48, 49,
+    47, 49, 50,
+    51, 52, 49,
+    51, 52, 53]
+    # 10 vértices para N, 54 vértices en total, índice máximo 53
+
+    vertices = Yv + Ov + Uv + Wv+ Iv + Nv
+    indices = Yi + Oi + Ui + Wi + Ii + Ni
+    Shape = bs.Shape(vertices, indices)
+    gpu = createGPUShape(Shape, pipeline)
+    return gpu
+
+def VerticesYouwin(time):
+    # La figura que rodea el texto cambia forma según el tiempo sucedido
+    verticesCuadrado = [
+#   posición          colores
+    -0.5, -0.5, 0.0,  1.0, 0.0, 0.0,
+     0.5, -0.5, 0.0,  0.0, 1.0, 0.0,
+     0.5,  0.5, 0.0,  0.0, 0.0, 1.0,
+    -0.5,  0.5, 0.0,  1.0, 1.0, 1.0]
+
+    # Copia del rainbow quad en el centro
+    t1 = np.sin(time)
+    t2 = np.sin(time + np.pi /2)
+    t3 = np.sin(time + np.pi)
+    t4 = np.sin(time + np.pi * 3 / 2)
+
+    tx1 = np.cos(time)
+    tx2 = np.cos(time + np.pi /2)
+    tx3 = np.cos(time + np.pi)
+    tx4 = np.cos(time + np.pi * 3 / 2)
+
+    verticesDinamic = [
+        #posición                  colores
+        0, -0.75 - (0.25 * t1), 0, t1, t2, t3,
+        0.75 + (0.25 * t3), 0,  0, t2, t3, t1,
+        0, 0.75 + (0.25 * t1),  0, t3, t1, t2,
+        -0.75 - (0.25 * t3), 0, 0, t1, t3, tx4,
+        0.05 + 0.05*tx1 , -0.05  + 0.05*t1  ,  0, tx1, tx2, tx3,
+        0.05 + 0.05*tx2 , -0.05  + 0.05*t2  ,  0, tx2, tx3, tx1,
+        0.05 + 0.05*tx3 , -0.05  + 0.05*t3  ,  0, tx3, tx1, tx2,
+        0.05 + 0.05*tx4 , -0.05  + 0.05*t4  ,  0, tx1, tx3, t4
+    ]
+
+    return verticesCuadrado + verticesDinamic
+
+def indicesYouWin():
+    # Definimos la conexión entre los índices
+    indicesCuadrado = [
+        0, 1, 2,
+        2, 3, 0]
+    indicesDinamic = [
+        0, 1, 4,
+        1, 2, 5,
+        2, 3, 6,
+        3, 0, 7,
+        8, 9, 10,
+        8, 10, 11
+    ]
+
+    return indicesCuadrado + indicesDinamic

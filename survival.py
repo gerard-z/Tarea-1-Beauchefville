@@ -357,7 +357,7 @@ if __name__ == "__main__":
         glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
         glUniform3fv(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "spritesFin"), 1, FrameFin)
         glUniform1i(glGetUniformLocation(animated3Tex_pipeline.shaderProgram, "index"), time)
-        sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transdform")
+        sg.drawSceneGraphNode(storeSign, animated3Tex_pipeline, "transform")
 
         glUseProgram(PlayableTex_pipeline.shaderProgram)
         glUniform3fv(glGetUniformLocation(PlayableTex_pipeline.shaderProgram, "spritesInit"), 1, FrameInit)
